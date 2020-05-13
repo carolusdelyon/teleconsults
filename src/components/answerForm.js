@@ -1,23 +1,9 @@
 import React, { useState } from 'react';
 import { Form, Field, ErrorMessage } from 'formik';
-import { useQuery } from '@apollo/react-hooks';
+import { useQuery, useMutation } from '@apollo/react-hooks';
 import gql from 'graphql-tag';
 
-// comentary: "anothertest"
-// proposalDiagnosticTests: "anothertest"
-// diagnosisPresumtive: "anothertest"
-// diagnosisDefinitive: "anothertest"
-// proposalEducation: "anothertest"
-// proposalTherapy: "anothertest"
-// illId: "anothertest"
-// subillId: "anothertest"
-// ////////////////
-// city: "anothertest"
-// province: "anothertest"
-// speciality: "anothertest"
-// date: "anothertest"
-// hospital: "anothertest"
-// specialistName: "anothertest"
+const attachedFileSizeLimit = 5000000;
 
 export const ILLS = gql`
   query ills{
@@ -27,19 +13,64 @@ export const ILLS = gql`
       }
   }
 `;
+export const SUBILLS = gql`
+  query subills($id: ID!) {
+    ill(id: $id){
+        subIlls{
+            id
+            name
+        }
+    }
+  }
+`;
 
-function AnswerForm({ isSubmitting, resetForm }) {
+// `setFiles` control the files stack to be attached
+function AnswerForm({ isSubmitting, resetForm, setFiles }) {
+    // state to control ill and subills datalists
+    const [selectedIll, setSelectedIll] = useState(null);
+
     // get ills
     const {
-        data,
-        loadingEsp,
-        errorEsp
+        data: dataIll,
+        loading: loadingIll,
+        error: errorIll
     } = useQuery(ILLS);
-    // if (loadingEsp) console.log('loading specialist data');
-    // if (errorEsp || !data) console.log('error getting the specialist data');
+    // if (loading) console.log('loading specialist data');
+    // if (error || !data) console.log('error getting the specialist data');
+
+    const {
+        data: dataSubill,
+        loading: loadingSubill,
+        error: errorSubill
+    } = useQuery(SUBILLS, {
+        variables: { id: selectedIll }
+    });
+
+    function illSelection(e) {
+        dataIll.ills && setSelectedIll(e.target.value);
+    }
+
+
+    // TODO: make a better validation
+    function validateFile({ target }) {
+        const files = target.files;
+        for (let i = 0; i < files.length; i++) {
+            const file = files.item(i);
+            console.log(file); // remove
+
+            if (file.size > attachedFileSizeLimit) {
+                alert('El tamaño del archivo excede el límite permitido.');
+                target.value = null;
+                setFiles(null);
+                return null;
+            }
+        }
+        target.validity.valid && setFiles(files);
+    }
 
     return (
         <>
+            <input type="file" multiple onChange={validateFile} />
             <Form>
                 <Accordion number="1" title="Comentarios al cuadro clínico de teleconsulta">
                     <ErrorMessage name="commentary" component="div" />
@@ -57,18 +88,25 @@ function AnswerForm({ isSubmitting, resetForm }) {
 
                 <Accordion number="3" title="Diagnósticos presuntivos o definitivos">
                     <ErrorMessage name="commentary" component="div" />
-                    <div className="center">
-                        <label>Enfermedad
-			            <select name="illId">
-                            {data.ills && data.ills.map((ill, index) => (
-                                <option key={index}>{ill.id} - {ill.name}</option>
+                    <label>Enfermedad
+                        <Field list="ills" name="illId"
+                            onInput={illSelection}
+                        />
+                        <datalist id="ills">
+                            {dataIll.ills && dataIll.ills.map((ill, index) => (
+                                <option key={index} value={ill.id}>{ill.id} - {ill.name}</option>
                             ))}
-                        </select>
-                        <br />
-                        <select name="subillId">
-                        </select>
-                        </label>
-                    </div>
+                        </datalist>
+                    </label>
+                    {selectedIll && <label>Sub Enfermedad
+                        <Field list="subills" name="subillId" />
+                        <datalist id="subills">
+                            {dataSubill.ill && dataSubill.ill.subIlls && dataSubill.ill.subIlls.map((subill, index) => (
+                                <option key={index} value={subill.id}>{subill.id} - {subill.name}</option>
+                            ))}
+                        </datalist>
+                    </label>}
+
                     <label>Diagnóstico presuntivo
 			        <Field as="textarea" name="diagnosisPresumtive" />
                     </label>

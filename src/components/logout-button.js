@@ -7,7 +7,9 @@ const LogoutButton = () => {
     <button
       onClick={() => {
         client.writeData({ data: { isLoggedIn: false } });
-        localStorage.clear();
+        // localStorage.clear();
+        // to preserve the autosave forms
+        localStorage.setItem('token', undefined);
       }}
     >
       Logout

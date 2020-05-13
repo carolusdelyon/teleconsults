@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 // import './index.css';
 
@@ -6,7 +6,9 @@ import * as serviceWorker from './serviceWorker';
 import { ApolloClient } from 'apollo-client';
 import { ApolloProvider, useQuery } from '@apollo/react-hooks';
 import { InMemoryCache } from 'apollo-cache-inmemory';
-import { HttpLink } from 'apollo-link-http';
+//import { HttpLink } from 'apollo-link-http';
+// replacing HttpLink to handle file uploading
+import { createUploadLink } from 'apollo-upload-client';
 import gql from 'graphql-tag';
 
 import Pages from './pages';
@@ -14,11 +16,11 @@ import Login from './pages/login';
 import { resolvers, typeDefs } from './resolvers';
 // import injectStyles from './styles';
 
-// Set up our apollo-client to point at the server we created
 const cache = new InMemoryCache();
+
 const client = new ApolloClient({
   cache,
-  link: new HttpLink({
+  link: new createUploadLink({
     uri: 'http://localhost:4000/graphql',
     headers: {
       authorization: localStorage.getItem('token'),
@@ -38,6 +40,10 @@ cache.writeData({
     cartItems: [],
   },
 });
+// init the autosave storage; if it doesn't exist yet
+if (!localStorage.getItem('autosave')) {
+  localStorage.setItem('autosave', '{}');
+}
 
 /**
  * Render our app
