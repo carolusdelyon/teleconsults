@@ -1,19 +1,18 @@
 import React from 'react';
 import { useApolloClient } from '@apollo/react-hooks';
 
-const LogoutButton = () => {
+const LogoutButton = (props) => {
   const client = useApolloClient();
   return (
-    <button
+    <div
       onClick={() => {
         client.writeData({ data: { isLoggedIn: false } });
-        // localStorage.clear();
-        // to preserve the autosave forms
-        localStorage.setItem('token', undefined);
+        // TODO: to preserve the autosave forms
+        localStorage.clear();
       }}
     >
-      Logout
-    </button>
+      {props.children}
+    </div>
   );
 }
 

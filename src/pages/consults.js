@@ -7,9 +7,9 @@ import {
 } from "react-router-dom";
 import gql from 'graphql-tag';
 import { useQuery } from '@apollo/react-hooks';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 
 import Loading from '../components/loading';
-import Header from '../components/header';
 import Greeting from '../components/greeting';
 import Consult from './consult';
 import { CONSULT_DATA_FRAGMENT } from './consult';
@@ -33,13 +33,13 @@ export default function Consults() {
     let match = useRouteMatch();
 
     const {
-        data,
+        data: dataConsults,
         loading,
         error
     } = useQuery(MY_CONSULTS, { fetchPolicy: "network-only" });
 
     if (loading) return <Loading />;
-    if (error || !data) return <p>Error getting consults :(</p>;
+    if (error || !dataConsults) return <p>Error getting consults :(</p>;
 
     /** This is a dirty workaround to solve the not
      * automatic update of the token in the local 
@@ -47,26 +47,39 @@ export default function Consults() {
      * 
      * TODO: fix this as soon as possible
      **/
-    if (!data.me) window && window.location.reload();
+    if (!dataConsults.me) window && window.location.reload();
+
+    // setting chart bar data
+    let countPendent = dataConsults.me ? dataConsults.me.pendent.length : 0;
+    let countAnswered = dataConsults.me ? dataConsults.me.answered.length : 0;
+    const dataChart = [{ name: 'Pendientes', count: countPendent }, { name: 'Contestadas', count: countAnswered }];
 
     return (
         <>
-            <Header />
+            {/* <ResponsiveContainer width={700} height={400} > */}
+            {/* dont loose animation */}
+                <BarChart width={400} height={200} data={dataChart}>
+                    <Bar fill="#8884d8" dataKey="count" label={{ position: 'insideTop' }} />
+                    <XAxis dataKey="name" />
+                    {/* <YAxis allowDecimals={false} hide={true} padding={{ top: -300 }}/> */}
+                    <YAxis allowDecimals={false} hide={true} domain={[0, 'dataMax']} />
+                </BarChart>
+            {/* </ ResponsiveContainer> */}
             <Switch>
                 <Route path={`${match.path}/:consultId`}>
                     <Consult />
                 </Route>
                 <Route path={`${match.path}`}>
-                    <Greeting name={data.me && data.me.name} />
+                    <Greeting name={dataConsults.me && dataConsults.me.name} />
                     <h2>Consultas Pendientes</h2>
                     <ul>
-                        {data.me && data.me.pendent.map((consult, index) => (
+                        {dataConsults.me && dataConsults.me.pendent.map((consult, index) => (
                             <ConsultTile consult={consult} key={index} />
                         ))}
                     </ul>
                     <h2>Consultas Pasadas</h2>
                     <ul>
-                        {data.me && data.me.answered.map((consult, index) => (
+                        {dataConsults.me && dataConsults.me.answered.map((consult, index) => (
                             <ConsultTile consult={consult} key={index} />
                         ))}
                     </ul>

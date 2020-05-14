@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
+import { Global, css } from '@emotion/core'
 // import './index.css';
 
 import * as serviceWorker from './serviceWorker';
@@ -14,7 +15,7 @@ import gql from 'graphql-tag';
 import Pages from './pages';
 import Login from './pages/login';
 import { resolvers, typeDefs } from './resolvers';
-// import injectStyles from './styles';
+import { global } from './styles';
 
 const cache = new InMemoryCache();
 
@@ -66,6 +67,9 @@ function IsLoggedIn() {
 
 ReactDOM.render(
   <React.StrictMode>
+    <Global
+      styles={global}
+    />
     <ApolloProvider client={client}>
       <IsLoggedIn />
     </ApolloProvider>
