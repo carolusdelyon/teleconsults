@@ -21,6 +21,7 @@ const style = css`
   position: sticky;
   bottom:0;
   padding: 1em 0;
+  margin-top: 4em;
 
   :not(.material-icons){
     font-size: ${fontSizes.small};

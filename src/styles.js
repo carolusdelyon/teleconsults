@@ -25,7 +25,38 @@ export const fontSizes = {
   verySmall: '0.3em',
 };
 
-// export const unit = 8;
+export const listStyle = css`
+    
+  ul{
+    margin: 1em;
+    border: 1px solid ${colors.greyLight};
+    box-shadow: 4px 4px ${colors.greyLight};
+    border-radius: 1em;
+    overflow: hidden;
+    background: ${colors.white};
+    color: ${colors.text};
+    text-align: left;
+    font-size: ${fontSizes.small};
+  }
+
+  li{
+    padding: 1em;
+  }
+  li:nth-child(even){
+    background: ${colors.background};
+  }
+  li>:nth-child(1){
+    color: ${colors.text};
+    padding-right: 1em;
+    font-weight: 700;
+  }
+
+  a{
+        text-decoration: none;
+  }
+`;
+
+
 export const global = css`
   html{
     font-family: 'Noto Sans', sans-serif;
@@ -40,6 +71,9 @@ export const global = css`
   body{
     margin: 0;
     padding: 0;
+    display: block;
+    margin: 0 auto;
+    max-width: 500px;
   }
 
   #root{
@@ -47,9 +81,25 @@ export const global = css`
     flex-direction: column;
     height: 100%;
   }
-
+  
   h1, h2, h3 {
     font-family: 'Noto Serif', serif;
+    margin: 0;
+    padding: 0;
+  }
+  h1{
+    font-size: 1.5em;
+  }
+  h2{
+    margin: 0.5em 0;
+    margin-top: 1em;
+  }
+  h3{
+      text-align: center;
+      padding: 0.5em;
+      color: ${colors.quaternary};
+  }
+  h4{
     margin: 0;
     padding: 0;
   }
@@ -57,11 +107,12 @@ export const global = css`
   button{
     font-family: inherit;
     font-weight: 700;
+    font-size: 1em;
     background: ${colors.primary};
     color:${colors.white};
     border: none;
     border-radius: 5px;
-    padding: 0.7em 1.5em;
+    padding: 1em 1.5em;
     margin: 1em 0;
   }
 
@@ -81,46 +132,12 @@ export const global = css`
     list-style: none;
   }
 
+  .round{
+      background: ${colors.white};
+      color: ${colors.primary};
+      border-radius: 5px;
+      width: 2em;
+      text-align: center;
+      display: inline-block;
+  }
 `;
-
-
-
-// export default () => injectGlobal({
-//     [['html', 'body']]: {
-//       height: '100%',
-//     },
-//     body: {
-//       margin: 0,
-//       padding: 0,
-//       fontFamily: "'Source Sans Pro', sans-serif",
-//       backgroundColor: colors.background,
-//       color: colors.text,
-//     },
-//     '#root': {
-//       display: 'flex',
-//       flexDirection: 'column',
-//       minHeight: '100%',
-//     },
-//     '*': {
-//       boxSizing: 'border-box',
-//     },
-//     [['h1', 'h2', 'h3', 'h4', 'h5', 'h6']]: {
-//       margin: 0,
-//       fontWeight: 600,
-//     },
-//     h1: {
-//       fontSize: 48,
-//       lineHeight: 1,
-//     },
-//     h2: {
-//       fontSize: 40,
-//     },
-//     h3: {
-//       fontSize: 36,
-//     },
-//     h5: {
-//       fontSize: 16,
-//       textTransform: 'uppercase',
-//       letterSpacing: 4,
-//     }
-//   });

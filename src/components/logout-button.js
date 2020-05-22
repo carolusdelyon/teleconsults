@@ -6,9 +6,7 @@ const LogoutButton = (props) => {
   return (
     <div
       onClick={() => {
-        client.writeData({ data: { isLoggedIn: false } });
-        // TODO: to preserve the autosave forms
-        localStorage.clear();
+        logout(client);
       }}
     >
       {props.children}
@@ -17,3 +15,9 @@ const LogoutButton = (props) => {
 }
 
 export default LogoutButton;
+
+export function logout(client) {
+  client.writeData({ data: { isLoggedIn: false } });
+  // TODO: to preserve the autosave forms
+  localStorage.clear();
+}

@@ -1,17 +1,35 @@
-import React from "react";
+import React, { useState, Fragment } from "react";
 import gql from 'graphql-tag';
-import { useQuery } from '@apollo/react-hooks';
+import { useQuery, useMutation, useApolloClient } from '@apollo/react-hooks';
 /** @jsx jsx */
 import { jsx, css } from '@emotion/core';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
 
 import Loading from '../components/loading';
-import {colors, fontSizes} from '../styles';
+import { colors, fontSizes, listStyle } from '../styles';
+import { logout } from '../components/logout-button';
+import { styletile } from '../styles';
+import { registertNotifications, unsusbsribe } from "../utils";
+
+const style = css`
+  text-align: center;
+
+  ${listStyle}
+
+  .material-icons{
+    margin-left: 1em;
+    cursor: pointer;
+  }
+`;
 
 export const ME = gql`
   query me{
       me{
+          id
+          roles
           name
-          username 
+          username
+          email
           speciality
           speciality2
           hospital
@@ -22,15 +40,50 @@ export const ME = gql`
   }
 `;
 
-export default function Pages() {
-  const {
-    data,
-    loading,
-    error
-  } = useQuery(ME);
+export const UPDATE_USER = gql`
+  mutation updateUser($user: UserInput!) {
+    updateUser(user: $user){
+      success
+		  message
+    }
+  }
+`;
 
-  if (loading) return <Loading />;
-  if (error || !data) return <p>Error getting user data :(</p>;
+export default function Pages() {
+  // state to control wether are editing the profile data
+  const [isEditing, setIsEditing] = useState(false);
+
+  const client = useApolloClient();
+
+  // mutation to update profile data
+  const [userUpdate, { loading: loadingUserUpdate, error: errorUserUpdate }] = useMutation(
+    UPDATE_USER,
+    {
+      onCompleted(returnData) {
+        console.log(returnData); //remove
+        alert(returnData.updateUser.message);
+        if (returnData.updateUser.success && returnData.updateUser.username === dataMe.me.username) {
+          window.location.reload();
+        } else {
+          logout(client);
+        }
+      }
+    }
+  );
+  if (loadingUserUpdate) console.log('loading update user');
+  if (errorUserUpdate) console.log('error updating the user');
+
+  const {
+    data: dataMe,
+    loading: loadingMe,
+    error: errorMe
+  } = useQuery(ME, { fetchPolicy: "network-only" });
+
+  if (loadingMe) return <Loading />;
+  if (errorMe || !dataMe){
+    console.log(errorMe);
+    return <p>Error getting user data in profile :(</p>;
+}
 
   /** This is a dirty workaround to solve the not
   * automatic update of the token in the local 
@@ -38,69 +91,161 @@ export default function Pages() {
   * 
   * TODO: fix this as soon as possible
   **/
-  if (!data.me) window && window.location.reload();
+  if (!dataMe.me) window && window.location.reload();
 
-
-  const style = css`
-    h3{
-      text-align: center;
-      padding: 0.5em;
-      color: ${colors.secondary};
-    }
-    ul{
-      background: ${colors.quaternary};
-      color: ${colors.textLight};
-      text-transform: uppercase;
-    }
-
-    li{
-      padding: 0.7em;
-    }
-    li:nth-child(even){
-      background: ${colors.tertiary};
-    }
-    li>:nth-child(1){
-      color: ${colors.text};
-      font-weight: 700;
-      padding-right: 1em;
-    }
-  `;
+  // notify if there is any edition running
+  function notify() {
+    setIsEditing(true);
+  }
 
   return (
-    <div css={style}>
-      <h3>Información</h3>
-      <ul>
-        <li>
-          <span>Nombre</span>
-          <span>{data.me.name}</span>
-        </li>
-        <li>
-          <span>Nombre de usuario</span>
-          <span>{data.me.username}</span>
-        </li>
-        <li>
-          <span>Especialidad</span>
-          <span>{data.me.speciality}</span>
-          {data.me.speciality2 && <span>{data.me.speciality2}</span>}
-        </li>
-        <li>
-          <span>Hospital</span>
-          <span>{data.me.hospital}</span>
-        </li>
-        <li>
-          <span>Provincia</span>
-          <span>{data.me.province}</span>
-        </li>
-        <li>
-          <span>Cantón</span>
-          <span>{data.me.city}</span>
-        </li>
-        <li>
-          <span>Teléfono</span>
-          <span>{data.me.phone}</span>
-        </li>
-      </ul>
+    <Formik
+      initialValues={{
+        username: dataMe.me.username,
+        password: '',
+        email: dataMe.me.email,
+        phone: dataMe.me.phone
+      }}
+      validate={values => {
+        const errors = {};
+        if (!values.password) {
+          // errors.password = 'Contraseña requerida';
+        }
+        if (!values.username) {
+          errors.username = 'Usuario requerido';
+        }
+        if (!values.email) {
+          errors.username = 'Email requerido';
+        }
+        if (!values.phone) {
+          errors.username = 'Telefono requerido';
+        }
+        return errors;
+      }}
+      onSubmit={(values, { setSubmitting }) => {
+        if (window.confirm('¿Está seguro de actualizar estos datos?')) {
 
-    </div>
+          console.log('sending....'); // remove
+          console.log(values); // remove
+
+          userUpdate({
+            variables: {
+              user: values
+            }
+          });
+
+          setSubmitting(false);
+        }
+      }}
+    >
+      {({ isSubmitting }) => (
+        <div>
+          <Form>
+            <div css={style}>
+              <h2>Información</h2>
+              <ul>
+                <li>
+                  <span>Nombre</span>
+                  <span>{dataMe.me.name}</span>
+                </li>
+                <li>
+                  <span>Roles</span>
+                  <span>{dataMe.me.roles.map((role, i) => {
+                    switch (role) {
+                      case 'SPECIALIST':
+                        return <span key={i}>{'Especilista '}</span>;
+                        break;
+                      case 'RURAL':
+                        return <span key={i}>{'Médico Rural '}</span>;
+                        break;
+                      case 'COORDINATOR':
+                        return <span key={i}>{'Coordinador '}</span>;
+                        break;
+                      default:
+                        return <span key={i}>? </span>;
+                        break;
+                    }
+                  })}</span>
+                </li>
+                <ProfileItem notify={notify} type="text" name="username" label="Nombre de usuario" value={dataMe.me.username} />
+                <ProfileItem notify={notify} type="text" name="email" label="Correo" value={dataMe.me.email} />
+                <ProfileItem notify={notify} type="text" name="phone" label="Teléfono" value={dataMe.me.phone} />
+                <ProfileItem notify={notify} type="password" name="password" label="Contraseña" value="******" />
+                <li>
+                  <span>Especialidad</span>
+                  <span>{dataMe.me.speciality}</span>
+                  {dataMe.me.speciality2 && <span>{dataMe.me.speciality2}</span>}
+                </li>
+                <li>
+                  <span>Hospital</span>
+                  <span>{dataMe.me.hospital}</span>
+                </li>
+                <li>
+                  <span>Provincia</span>
+                  <span>{dataMe.me.province}</span>
+                </li>
+                <li>
+                  <span>Cantón</span>
+                  <span>{dataMe.me.city}</span>
+                </li>
+              </ul>
+
+              {isEditing && <button type="submit" disabled={isSubmitting}>
+                Guardar cambios
+          </button>}
+            </div>
+          </Form>
+          {/* TODO: improve */}
+          <button css={css`
+            margin: 0 auto;
+            display: block;
+          `}
+            onClick={ 
+              () => {
+                registertNotifications({ username: dataMe.me.username });
+                alert('Ha sido registrado para recibir notificaciones');
+              }
+            }>
+            Recibir notificaciones</button>
+          <button css={css`
+            background: ${colors.quaternary};
+            margin: 0 auto;
+            display: block;
+            margin-top: 1em;
+          `}
+            onClick={ 
+              () => {
+                unsusbsribe();
+                alert('Ha cancelado su suscripción para recibir notificaciones.');
+              }
+            }>
+            Cancelar notificaciones</button>
+        </div>
+      )}
+    </Formik>
+  );
+}
+
+const ProfileItem = ({ label, value, notify, name, type }) => {
+  // state to control wether are editing the profile data
+  const [isEditing, setIsEditing] = useState(false);
+
+  function updateIsEditing() {
+    setIsEditing(true);
+    notify();
+  }
+
+  return (
+    <li>
+      <span>{label}</span>
+      {!isEditing && <span>{value}</span>}
+      {!isEditing && <span className="material-icons round"
+        onClick={updateIsEditing}
+      >create
+        </span>
+      }
+      {isEditing &&
+        <Field type={type} name={name} />}
+    </li>
   );
 }

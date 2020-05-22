@@ -1,10 +1,20 @@
 import React from "react";
 import { useQuery } from '@apollo/react-hooks';
+/** @jsx jsx */
+import { jsx, css } from '@emotion/core';
 
 import { ME } from '../pages/profile';
 import Loading from './loading';
+import { colors, fontSizes } from '../styles';
 
-const Greeting = ({name}) => {
+const style = css`
+    background: ${colors.tertiary};
+    color: ${colors.textLight};
+    padding: 1em;
+    font-weight: 400;
+`;
+
+const Greeting = ({ name }) => {
     const {
         data,
         loading,
@@ -12,16 +22,22 @@ const Greeting = ({name}) => {
     } = useQuery(ME);
 
     if (loading) return <Loading />;
-    if (error || !data) return <p>Error getting user data :(</p>;
+    if (error || !data) {
+        console.log(error);
+        return <p>Error getting user data in greetings :(</p>;
+    }
 
     const hour = new Date().getHours();
 
     return (
-        <>
-        <p>{(hour < 12 ? 'Buenos días '
+        <h4 css={style}>{(hour < 12 ? 'Buenos días '
             : hour < 18 ? 'Buenas tardes '
-                : 'Buenas noches ') + name}</p>
-        </>
+                : 'Buenas noches ')}<span
+                    css={css`
+                        text-transform: capitalize;
+                    `}
+                // taking just the first name
+                >{name.split(' ')[0].toLowerCase()}</span></h4>
     );
 }
 

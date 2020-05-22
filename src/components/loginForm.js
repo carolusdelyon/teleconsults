@@ -17,8 +17,7 @@ const style = css`
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        border: 1px solid ${colors.background
-        };
+        border: 1px solid ${colors.background};
         border-radius: 5px;
         color: ${colors.textLight};
         padding: 1em ;
@@ -28,12 +27,11 @@ const style = css`
         color: ${colors.primary};
         text-align:center;
         margin-bottom: 0.5em;
+        font-size: 2em;
     }
     
     h2{
         color: ${colors.tertiary};
-        font-weight: 700;
-        margin-bottom: 0.5em;
     }
 
     label{
@@ -81,7 +79,11 @@ const LoginForm = (props) => (
                 <Form>
                     <h1>Telemedicina Cayapas</h1>
                     <h2>Ingresar</h2>
-                    <div>{props.warningMessage}</div>
+                    <div
+                        css={css`
+                            color:${colors.error};
+                        `}
+                    >{props.warningMessage}</div>
                     <label> Usuario
                         <ErrorMessage name="username" component="div" />
                         <Field type="text" name="username" />

@@ -69,7 +69,7 @@ const Answer = ({ answer }) => {
         {
             onCompleted(returnData) {
                 console.log(returnData); //remove
-                
+
                 // if there are attachments
                 if (files) {
                     setAnswerId(returnData.answer.answer.id);
@@ -81,6 +81,8 @@ const Answer = ({ answer }) => {
                             id: returnData.answer.answer.id
                         }
                     });
+                }else{
+                    window.location.href = '/consults';
                 }
             }
         }
@@ -94,6 +96,7 @@ const Answer = ({ answer }) => {
         {
             onCompleted(returnData) {
                 console.log(returnData); // remove
+                window.location.href = '/consults';
             }
         }
     );
@@ -130,7 +133,9 @@ const Answer = ({ answer }) => {
             {
                 onCompleted(returnData) {
                     console.log(returnData);
+                    window.location.href = '/consults';
                 }
+
             }
         );
     if (loadingAttachment) console.log('loading update filename');
@@ -167,23 +172,24 @@ const Answer = ({ answer }) => {
                 return errors;
             }}
             onSubmit={(values, { setSubmitting }) => {
-                values.city = dataEspecialist.me.city;
-                values.province = dataEspecialist.me.province;
-                values.speciality = dataEspecialist.me.speciality;
-                values.hospital = dataEspecialist.me.hospital;
-                values.specialistName = dataEspecialist.me.name;
+                if (window.confirm('¿Está seguro de guardar esta respuesta?')) {
+                    values.city = dataEspecialist.me.city;
+                    values.province = dataEspecialist.me.province;
+                    values.speciality = dataEspecialist.me.speciality;
+                    values.hospital = dataEspecialist.me.hospital;
+                    values.specialistName = dataEspecialist.me.name;
 
-                console.log('sending this values:');
-                console.log(values);
+                    console.log('sending this values:');
+                    console.log(values);
 
-                // selecting either creating or updating
-                let id = consultId;
-                console.log(id); // remove
-
-                !answer.id && saveAnswer({ variables: { consultId: id, answer: values } });
-
-                // values.id = answer.id;
-                // updateAnswer({ variables: { answer: values } });
+                    // selecting either creating or updating
+                    if (!answer || (answer && !answer.id)) {
+                        saveAnswer({ variables: { consultId, answer: values } });
+                    } else {
+                        values.id = answer.id;
+                        updateAnswer({ variables: { answer: values } });
+                    }
+                }
                 setSubmitting(false);
             }}
         >

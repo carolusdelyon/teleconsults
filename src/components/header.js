@@ -9,15 +9,23 @@ const style = css`
     background: ${colors.secondary};
     color: ${colors.textLight};
     width: 100%;
-    padding: 1em;
-    margin-bottom: 1em;
+    h1{
+        padding: 0.6em;
+    }
 `;
 
 const Header = () => {
-    let location = useLocation();
+    const { pathname } = useLocation();
+    const title =
+        /.*\/consults$/.test(pathname) ? 'Consultas' :
+            /.*\/profile$/.test(pathname) ? 'Perfil' :
+                /.*\/consults\/[1-9]*$/.test(pathname) ? 'Consulta' :
+                    /.*\/consults\/[1-9]*\/answer$/.test(pathname) ? 'Respondiendo' :
+                        /.*\/consults\/[1-9]*\/answer\/[1-9]*$/.test(pathname) ? 'Actualizando' : 'Teleconsultas';
+
     return (
         <header css={style}>
-            <h1>{location.pathname.includes('profile') ? 'Perfil' : 'Consultas'}</h1>
+            <h1>{title}</h1>
         </header>
     );
 }

@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import { Global, css } from '@emotion/core'
 // import './index.css';
 
-import * as serviceWorker from './serviceWorker';
+// import serviceWorker from './serviceworker';
 import { ApolloClient } from 'apollo-client';
 import { ApolloProvider, useQuery } from '@apollo/react-hooks';
 import { InMemoryCache } from 'apollo-cache-inmemory';
@@ -22,7 +22,7 @@ const cache = new InMemoryCache();
 const client = new ApolloClient({
   cache,
   link: new createUploadLink({
-    uri: 'http://localhost:4000/graphql',
+    uri: 'http://18.217.185.213:4000/graphql',
     headers: {
       authorization: localStorage.getItem('token'),
       'client-name': 'Teleconsults',
@@ -80,4 +80,4 @@ ReactDOM.render(
 // If you want your app to work offline and load faster, you can change
 // unregister() to register() below. Note this comes with some pitfalls.
 // Learn more about service workers: https://bit.ly/CRA-PWA
-serviceWorker.unregister();
+// serviceWorker.register();

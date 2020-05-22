@@ -8,38 +8,62 @@ import {
 import gql from 'graphql-tag';
 import { useQuery } from '@apollo/react-hooks';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+/** @jsx jsx */
+import { jsx, css } from '@emotion/core';
 
 import Loading from '../components/loading';
 import Greeting from '../components/greeting';
 import Consult from './consult';
 import { CONSULT_DATA_FRAGMENT } from './consult';
+import { colors, fontSizes, listStyle } from '../styles';
+import ConsultsEspecialist from '../components/consultsSpecialist';
+import ConsultsCoordinator from '../components/consultsCoordinator';
 
-export const MY_CONSULTS = gql`
-query myConsults {
+const limitWords = 100;
+
+const style = css`
+    text-align: center;
+
+    h2>span{
+        color: ${colors.warning};
+    }
+
+    /* bar chart */
+    .recharts-wrapper{
+        margin: 0 auto;
+        padding: 0;
+        margin-top: 1em;
+        margin-top: 1em;
+    }
+    .recharts-bar text{
+        stroke: ${colors.textLight};
+        fill: ${colors.textLight};
+    }
+`;
+
+export const ME = gql`
+query me {
   me {
       name,
-    pendent: consults(state: PENDENT) {
-        ...ConsultData
-    }
-    answered: consults(state: ANSWERED) {
-        ...ConsultData
-    }
+      roles
   }
 }
-${CONSULT_DATA_FRAGMENT}
 `;
 
 export default function Consults() {
     let match = useRouteMatch();
 
     const {
-        data: dataConsults,
+        data: dataMe,
         loading,
         error
-    } = useQuery(MY_CONSULTS, { fetchPolicy: "network-only" });
+    } = useQuery(ME);
 
     if (loading) return <Loading />;
-    if (error || !dataConsults) return <p>Error getting consults :(</p>;
+    if (error || !dataMe){
+        console.log(error);
+        return <p>Error getting user data in consults :(</p>;
+    }
 
     /** This is a dirty workaround to solve the not
      * automatic update of the token in the local 
@@ -47,61 +71,56 @@ export default function Consults() {
      * 
      * TODO: fix this as soon as possible
      **/
-    if (!dataConsults.me) window && window.location.reload();
+    if (!dataMe.me) window && window.location.reload();
 
-    // setting chart bar data
-    let countPendent = dataConsults.me ? dataConsults.me.pendent.length : 0;
-    let countAnswered = dataConsults.me ? dataConsults.me.answered.length : 0;
-    const dataChart = [{ name: 'Pendientes', count: countPendent }, { name: 'Contestadas', count: countAnswered }];
 
     return (
-        <>
-            {/* <ResponsiveContainer width={700} height={400} > */}
-            {/* dont loose animation */}
-                <BarChart width={400} height={200} data={dataChart}>
-                    <Bar fill="#8884d8" dataKey="count" label={{ position: 'insideTop' }} />
-                    <XAxis dataKey="name" />
-                    {/* <YAxis allowDecimals={false} hide={true} padding={{ top: -300 }}/> */}
-                    <YAxis allowDecimals={false} hide={true} domain={[0, 'dataMax']} />
-                </BarChart>
-            {/* </ ResponsiveContainer> */}
+        <div css={style}>
             <Switch>
                 <Route path={`${match.path}/:consultId`}>
                     <Consult />
                 </Route>
                 <Route path={`${match.path}`}>
-                    <Greeting name={dataConsults.me && dataConsults.me.name} />
-                    <h2>Consultas Pendientes</h2>
-                    <ul>
-                        {dataConsults.me && dataConsults.me.pendent.map((consult, index) => (
-                            <ConsultTile consult={consult} key={index} />
-                        ))}
-                    </ul>
-                    <h2>Consultas Pasadas</h2>
-                    <ul>
-                        {dataConsults.me && dataConsults.me.answered.map((consult, index) => (
-                            <ConsultTile consult={consult} key={index} />
-                        ))}
-                    </ul>
+                    <Greeting name={dataMe.me && dataMe.me.name} />
+                    <ConsultsEspecialist />
+                    <ConsultsCoordinator />
+                    {/* {dataMe.me.roles.includes('SPECIALIST') &&
+                        <ConsultsEspecialist />}
+                    {dataMe.me.roles.includes('COORDINATOR') &&
+                        <ConsultsCoordinator />
+                    } */}
                 </Route>
             </Switch>
-        </>
+        </div>
     );
 }
 
-function ConsultTile({ consult }) {
+export function ConsultTile({ consult }) {
     let match = useRouteMatch();
-
     return (
-        <Link to={`${match.url}/${consult.id}`}>
-            <li>
-                {Object.entries(consult).map(([key, value], index) => (
-                    // discarding foreign properties
-                    consult.hasOwnProperty(key) && !/_.*/.test(key)
-                    && <span key={index}> {key}: {value}</span>
-                ))}
-            </li>
-        </Link>
+        <li css={listStyle}>
+            <Link to={`${match.url}/${consult.id}`}>
+                <ul>
+                    <li>
+                        <span>Enviada</span>
+                        <span>{consult.date}</span>
+                    </li>
+                    <li>
+                        <span>Origen</span>
+                        <span>{consult.city} / {consult.province}</span>
+                    </li>
+                    <li>
+                        <span>Unidad</span>
+                        <span>{consult.operatingUnit}</span>
+                    </li>
+                    <li>
+                        <span>Motivo</span>
+                        <span>{consult.reason.length > limitWords ?
+                            `${consult.reason.substring(0, limitWords)}...`
+                            : consult.reason}</span>
+                    </li>
+                </ul>
+            </Link>
+        </li>
     );
-
 }
