@@ -1,17 +1,11 @@
-import React, { useEffect } from 'react';
-import ReactDOM from 'react-dom';
-import { Global, css } from '@emotion/core'
-// import './index.css';
-
-// import serviceWorker from './serviceworker';
-import { ApolloClient } from 'apollo-client';
 import { ApolloProvider, useQuery } from '@apollo/react-hooks';
+import { Global } from '@emotion/core';
 import { InMemoryCache } from 'apollo-cache-inmemory';
-//import { HttpLink } from 'apollo-link-http';
-// replacing HttpLink to handle file uploading
+import { ApolloClient } from 'apollo-client';
 import { createUploadLink } from 'apollo-upload-client';
 import gql from 'graphql-tag';
-
+import React from 'react';
+import ReactDOM from 'react-dom';
 import Pages from './pages';
 import Login from './pages/login';
 import { resolvers, typeDefs } from './resolvers';
@@ -22,7 +16,7 @@ const cache = new InMemoryCache();
 const client = new ApolloClient({
   cache,
   link: new createUploadLink({
-    uri: 'http://18.217.185.213:4000/graphql',
+    uri: 'http://localhost:4000/graphql',
     headers: {
       authorization: localStorage.getItem('token'),
       'client-name': 'Teleconsults',
@@ -38,7 +32,6 @@ const client = new ApolloClient({
 cache.writeData({
   data: {
     isLoggedIn: !!localStorage.getItem('token'),
-    cartItems: [],
   },
 });
 // init the autosave storage; if it doesn't exist yet

@@ -36,8 +36,6 @@ export default function ConsultEspecialist() {
 
     return (
         <div>
-            <hr />
-            <hr />
             <BarChart width={document.body.clientWidth * 0.8} height={150} data={dataChart}>
                 <Bar fill={colors.quaternary} dataKey="count" label={{ position: 'inside' }} />
                 <XAxis dataKey="name" />
@@ -49,14 +47,14 @@ export default function ConsultEspecialist() {
                     <ConsultTile consult={consult} key={index} />
                 ))}
             </ul>
-            {dataConsults.unassigned.length == 0 && <p>No hay consultas por asignar.</p>}
+            {dataConsults.unassigned.length === 0 && <p>No hay consultas por asignar.</p>}
             <h2>Consultas Recién Asignadas</h2>
             <ul>
                 {dataConsults.pendent.map((consult, index) => (
                     <ConsultTile consult={consult} key={index} />
                 ))}
             </ul>
-            {dataConsults.pendent.length == 0 && <p>No hay consultas recién asignadas.</p>}
+            {dataConsults.pendent.length === 0 && <p>No hay consultas recién asignadas.</p>}
         </div>
     );
 }

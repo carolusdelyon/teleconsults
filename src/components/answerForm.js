@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Form, Field, ErrorMessage } from 'formik';
-import { useQuery, useMutation } from '@apollo/react-hooks';
+import { useQuery } from '@apollo/react-hooks';
 import gql from 'graphql-tag';
 /** @jsx jsx */
 import { jsx, css } from '@emotion/core';
@@ -15,7 +15,6 @@ const style = css`
     .section-form{
         transition: 0.5s;
         overflow: hidden;
-        text-align: left;
     }
 
     .open{
@@ -29,7 +28,6 @@ const style = css`
     h3{
         background: ${colors.quaternary};
         color:  ${colors.primary};
-        /* border: 1px solid ${colors.greyLight} */
         margin-bottom: 0.1em;
         padding: 0.8em;
     }
@@ -55,7 +53,7 @@ const style = css`
     textarea{
         outline: none;
         border: 1px solid ${colors.greyLight};
-        border-radius: 5px;
+        border-radius: 8px;
         padding: 1em;
         box-sizing: border-box;
         font-family: inherit;
@@ -89,7 +87,7 @@ export const SUBILLS = gql`
   }
 `;
 
-// `setFiles` control the files stack to be attached
+// `setFiles` controls the files stack to be attached
 function AnswerForm({ isSubmitting, resetForm, setFiles }) {
     const { pathname } = useLocation();
 
@@ -102,8 +100,8 @@ function AnswerForm({ isSubmitting, resetForm, setFiles }) {
         loading: loadingIll,
         error: errorIll
     } = useQuery(ILLS);
-    // if (loading) console.log('loading specialist data');
-    // if (error || !data) console.log('error getting the specialist data');
+    if (loadingIll) console.log('loading specialist data');
+    if (errorIll || !dataIll) console.log('error getting the specialist data');
 
     const {
         data: dataSubill,
@@ -112,6 +110,8 @@ function AnswerForm({ isSubmitting, resetForm, setFiles }) {
     } = useQuery(SUBILLS, {
         variables: { id: selectedIll }
     });
+    if (loadingSubill) console.log('loading specialist data');
+    if (errorSubill || !dataSubill) console.log('error getting the specialist data');
 
     function illSelection(e) {
         dataIll.ills && setSelectedIll(e.target.value);
@@ -206,7 +206,7 @@ function AnswerForm({ isSubmitting, resetForm, setFiles }) {
                         font-size: ${fontSizes.small};
                     `}
                     onClick={resetForm}>
-                        Reiniciar Formulario
+                    Reiniciar Formulario
                 </button>
 
                 <button type="submit" disabled={isSubmitting}>

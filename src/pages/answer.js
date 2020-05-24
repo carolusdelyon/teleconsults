@@ -9,15 +9,15 @@
  *      updating it.
 */
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useMutation, useQuery } from '@apollo/react-hooks';
 import { Formik } from 'formik';
-import { useQuery, useMutation } from '@apollo/react-hooks';
 import gql from 'graphql-tag';
-
-import AnswerForm from '../components/answerForm';
-import { ME } from './profile';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import AnswerForm from '../components/answerForm';
 import AutoSave from '../components/autosave';
+import { ME } from './profile';
+
 
 // setInfoForm('Se cargó un formulario guardado.');
 // setInfoForm('Este formulario se guarda automáticamente. Puede abandonarlo en cualqier momento y volver luego para continuar donde se quedó.');

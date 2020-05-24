@@ -1,24 +1,29 @@
-import React, { useState, Fragment } from "react";
-import gql from 'graphql-tag';
-import { useQuery, useMutation, useApolloClient } from '@apollo/react-hooks';
+import { useApolloClient, useMutation, useQuery } from '@apollo/react-hooks';
 /** @jsx jsx */
 import { jsx, css } from '@emotion/core';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
-
+import { ErrorMessage, Field, Form, Formik } from 'formik';
+import gql from 'graphql-tag';
+import Isemail from 'isemail';
+import { useState } from 'react';
 import Loading from '../components/loading';
-import { colors, fontSizes, listStyle } from '../styles';
 import { logout } from '../components/logout-button';
-import { styletile } from '../styles';
-import { registertNotifications, unsusbsribe } from "../utils";
+import { listStyle } from '../styles';
+import { registertNotifications, unsusbsribe } from '../utils';
+import {colors} from '../styles';
 
 const style = css`
-  text-align: center;
-
   ${listStyle}
-
   .material-icons{
     margin-left: 1em;
     cursor: pointer;
+  }
+
+  div>button:nth-child(2){
+    background: ${colors.quaternary};
+  }
+  div>button{
+    display: block;
+    margin: 2em auto;
   }
 `;
 
@@ -45,12 +50,16 @@ export const UPDATE_USER = gql`
     updateUser(user: $user){
       success
 		  message
+      user{
+        username
+      }
     }
   }
 `;
 
-export default function Pages() {
-  // state to control wether are editing the profile data
+export default function Profile() {
+  // state to control globally in this form
+  // wether are editing the profile data or not
   const [isEditing, setIsEditing] = useState(false);
 
   const client = useApolloClient();
@@ -62,36 +71,32 @@ export default function Pages() {
       onCompleted(returnData) {
         console.log(returnData); //remove
         alert(returnData.updateUser.message);
-        if (returnData.updateUser.success && returnData.updateUser.username === dataMe.me.username) {
-          window.location.reload();
-        } else {
-          logout(client);
+        // refresh user data
+        refetchMe().then(() => {
+          // logout if the username has changed
+          if (returnData.updateUser.success && returnData.updateUser.user.username !== dataMe.me.username) {
+            logout(client);
+          }
         }
+        ).catch(error => Error('Error refreshing: ' + error));
       }
     }
   );
-  if (loadingUserUpdate) console.log('loading update user');
-  if (errorUserUpdate) console.log('error updating the user');
 
   const {
     data: dataMe,
     loading: loadingMe,
-    error: errorMe
-  } = useQuery(ME, { fetchPolicy: "network-only" });
+    error: errorMe,
+    refetch: refetchMe
+  } = useQuery(ME);
 
   if (loadingMe) return <Loading />;
-  if (errorMe || !dataMe){
+  if (errorMe || !dataMe) {
     console.log(errorMe);
-    return <p>Error getting user data in profile :(</p>;
-}
-
-  /** This is a dirty workaround to solve the not
-  * automatic update of the token in the local 
-  * storage. // remove
-  * 
-  * TODO: fix this as soon as possible
-  **/
-  if (!dataMe.me) window && window.location.reload();
+    return <p>Error obteniendo los datos del usuario :(</p>;
+  }
+  if (loadingUserUpdate || !dataMe.me) return <Loading />;
+  if (errorUserUpdate) return <p>Error actualizando el usuario :(</p>;
 
   // notify if there is any edition running
   function notify() {
@@ -99,50 +104,51 @@ export default function Pages() {
   }
 
   return (
-    <Formik
-      initialValues={{
-        username: dataMe.me.username,
-        password: '',
-        email: dataMe.me.email,
-        phone: dataMe.me.phone
-      }}
-      validate={values => {
-        const errors = {};
-        if (!values.password) {
-          // errors.password = 'Contraseña requerida';
-        }
-        if (!values.username) {
-          errors.username = 'Usuario requerido';
-        }
-        if (!values.email) {
-          errors.username = 'Email requerido';
-        }
-        if (!values.phone) {
-          errors.username = 'Telefono requerido';
-        }
-        return errors;
-      }}
-      onSubmit={(values, { setSubmitting }) => {
-        if (window.confirm('¿Está seguro de actualizar estos datos?')) {
-
-          console.log('sending....'); // remove
-          console.log(values); // remove
-
-          userUpdate({
-            variables: {
-              user: values
-            }
-          });
-
-          setSubmitting(false);
-        }
-      }}
-    >
-      {({ isSubmitting }) => (
-        <div>
-          <Form>
-            <div css={style}>
-              <h2>Información</h2>
+    <div css={style}>
+      <Formik
+        enableReinitialize
+        initialValues={{
+          username: dataMe.me.username,
+          password: '',
+          email: dataMe.me.email,
+          phone: dataMe.me.phone
+        }}
+        validate={values => {
+          const errors = {}
+          // TODO: create restrictions to username
+          // and adapt phone validations
+          if (!values.username) {
+            errors.username = 'Usuario requerido';
+          }
+          if (!values.email) {
+            errors.email = 'Email requerido';
+          }
+          if (!values.phone) {
+            errors.phone = 'Telefono requerido';
+          }
+          if (!Isemail.validate(values.email)) {
+            errors.email = 'Email no válido';
+          }
+          if (!/^09[0-9]{8}$/.test(values.phone)) {
+            errors.phone = 'Teléfono movil no válido';
+          }
+          return errors;
+        }}
+        onSubmit={(values, { setSubmitting }) => {
+          if (window.confirm('¿Está seguro de actualizar sus datos?')) {
+            userUpdate({
+              variables: {
+                user: values
+              }
+            });
+            setSubmitting(false);
+          }
+        }}
+      >
+        {({ isSubmitting }) => (
+          <div>
+            <Form>
+              <h2>Mis datos</h2>
               <ul>
                 <li>
                   <span>Nombre</span>
@@ -154,28 +160,24 @@ export default function Pages() {
                     switch (role) {
                       case 'SPECIALIST':
                         return <span key={i}>{'Especilista '}</span>;
-                        break;
                       case 'RURAL':
                         return <span key={i}>{'Médico Rural '}</span>;
-                        break;
                       case 'COORDINATOR':
                         return <span key={i}>{'Coordinador '}</span>;
-                        break;
                       default:
                         return <span key={i}>? </span>;
-                        break;
                     }
                   })}</span>
                 </li>
-                <ProfileItem notify={notify} type="text" name="username" label="Nombre de usuario" value={dataMe.me.username} />
-                <ProfileItem notify={notify} type="text" name="email" label="Correo" value={dataMe.me.email} />
-                <ProfileItem notify={notify} type="text" name="phone" label="Teléfono" value={dataMe.me.phone} />
-                <ProfileItem notify={notify} type="password" name="password" label="Contraseña" value="******" />
                 <li>
                   <span>Especialidad</span>
                   <span>{dataMe.me.speciality}</span>
                   {dataMe.me.speciality2 && <span>{dataMe.me.speciality2}</span>}
                 </li>
+                <ProfileItem notify={notify} type="text" name="username" label="Nombre de usuario" value={dataMe.me.username} />
+                <ProfileItem notify={notify} type="text" name="email" label="Correo" value={dataMe.me.email} />
+                <ProfileItem notify={notify} type="text" name="phone" label="Teléfono" value={dataMe.me.phone} />
+                <ProfileItem notify={notify} type="password" name="password" label="Contraseña" value="******" />
                 <li>
                   <span>Hospital</span>
                   <span>{dataMe.me.hospital}</span>
@@ -189,40 +191,42 @@ export default function Pages() {
                   <span>{dataMe.me.city}</span>
                 </li>
               </ul>
-
-              {isEditing && <button type="submit" disabled={isSubmitting}>
-                Guardar cambios
-          </button>}
-            </div>
-          </Form>
-          {/* TODO: improve */}
-          <button css={css`
-            margin: 0 auto;
-            display: block;
-          `}
-            onClick={ 
-              () => {
-                registertNotifications({ username: dataMe.me.username });
-                alert('Ha sido registrado para recibir notificaciones');
-              }
-            }>
-            Recibir notificaciones</button>
-          <button css={css`
-            background: ${colors.quaternary};
-            margin: 0 auto;
-            display: block;
-            margin-top: 1em;
-          `}
-            onClick={ 
-              () => {
-                unsusbsribe();
-                alert('Ha cancelado su suscripción para recibir notificaciones.');
-              }
-            }>
-            Cancelar notificaciones</button>
-        </div>
-      )}
-    </Formik>
+              {/* edition buttons */}
+              {isEditing &&
+                <div>
+                  <button type="submit" disabled={isSubmitting}>
+                    Guardar cambios
+                  </button>
+                  <button type="button" disabled={isSubmitting}
+                    // TODO: improve this without realoading the page
+                    onClick = {
+                      () => window.location.reload()
+                    }>
+                    Cancelar
+                  </button>
+                </div>}
+            </Form>
+            {/* subscriptions buttons */}
+            {!isEditing &&
+              <div>
+                <button onClick={
+                  () => {
+                    registertNotifications({ username: dataMe.me.username });
+                    alert('Ha sido registrado para recibir notificaciones');
+                  }
+                }>Recibir notificaciones</button>
+                <button onClick={
+                  () => {
+                    unsusbsribe();
+                    alert('Ha cancelado su suscripción. No volverá a recibir notificaciones.');
+                  }
+                }>Cancelar notificaciones</button>
+              </div>
+            }
+          </div>
+        )}
+      </Formik>
+    </div>
   );
 }
 
@@ -232,6 +236,7 @@ const ProfileItem = ({ label, value, notify, name, type }) => {
 
   function updateIsEditing() {
     setIsEditing(true);
+    // notifing the form that we are in editing mode
     notify();
   }
 
@@ -246,6 +251,8 @@ const ProfileItem = ({ label, value, notify, name, type }) => {
       }
       {isEditing &&
         <Field type={type} name={name} />}
+      {isEditing &&
+        <ErrorMessage name={name} component="span" className="error" />}
     </li>
   );
 }

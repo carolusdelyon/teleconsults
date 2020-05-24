@@ -1,19 +1,13 @@
-import React, { useState } from "react";
-import {
-    Switch,
-    Route,
-    Link,
-    useRouteMatch
-} from "react-router-dom";
-import { useParams } from "react-router-dom";
-import gql from 'graphql-tag';
-import { useQuery, useMutation } from '@apollo/react-hooks';
-import Answer from './answer';
+import { useMutation, useQuery } from '@apollo/react-hooks';
 /** @jsx jsx */
 import { jsx, css } from '@emotion/core';
-
+import gql from 'graphql-tag';
+import { useState } from "react";
+import { Link, Route, Switch, useParams, useRouteMatch } from "react-router-dom";
 import Loading from '../components/loading';
-import { colors, listStyle } from "../styles";
+import { listStyle } from "../styles";
+import Answer from './answer';
+
 
 // from where we download the attachments
 const fileserverUrl = 'http://18.217.185.213:9000';

@@ -3,10 +3,9 @@
 
 // this comment tells babel to convert jsx to calls to a function called jsx instead of React.createElement
 /** @jsx jsx */
-import { css, jsx, keyframes } from '@emotion/core'
-
-import { ReactComponent as Logo } from '../assets/logo.svg';
+import { css, jsx, keyframes } from '@emotion/core';
 import { colors } from '../styles';
+
 
 // const spin = keyframes`
 //   to {

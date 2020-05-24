@@ -11,7 +11,7 @@ export const LOGIN_USER = gql`
   }
 `;
 
-export default function Login() {
+export default function Login({ refetchLoggedIn }) {
   const [warningMessage, setWarningMessage] = useState();
   const client = useApolloClient();
   const [login, { loading, error }] = useMutation(
@@ -24,12 +24,20 @@ export default function Login() {
         }
         localStorage.setItem('token', login);
         client.writeData({ data: { isLoggedIn: true } });
+
+        /** This is a dirty workaround to solve the not
+        * automatic update of the token in the local 
+        * storage. // remove
+        * 
+        * TODO: fix this as soon as possible
+        **/
+        window && window.location.reload();
       }
     }
   );
 
   if (loading) return <Loading />;
-  if (error) return <p>An error occurred in the login</p>;
+  if (error) return <p>Error en Login</p>;
 
   return <LoginForm login={login} warningMessage={warningMessage} />;
 }

@@ -1,10 +1,10 @@
+import { useQuery } from "@apollo/react-hooks";
+import gql from "graphql-tag";
 import React from "react";
 import { Bar, BarChart, XAxis, YAxis } from 'recharts';
+import { CONSULT_DATA_FRAGMENT } from "../pages/consult";
 import { ConsultTile } from '../pages/consults';
 import { colors } from '../styles';
-import gql from "graphql-tag";
-import { CONSULT_DATA_FRAGMENT } from "../pages/consult";
-import { useQuery } from "@apollo/react-hooks";
 import Loading from './loading';
 
 export const MY_CONSULTS = gql`
@@ -52,14 +52,14 @@ export default function ConsultEspecialist() {
                     <ConsultTile consult={consult} key={index} />
                 ))}
             </ul>
-            {dataConsults.me && dataConsults.me.pendent.length == 0 && <p>No tiene consultas pendientes.</p>}
+            {dataConsults.me && dataConsults.me.pendent.length === 0 && <p>No tiene consultas pendientes.</p>}
             <h2>Consultas Contestadas</h2>
             <ul>
                 {dataConsults.me && dataConsults.me.answered.map((consult, index) => (
                     <ConsultTile consult={consult} key={index} />
                 ))}
             </ul>
-            {dataConsults.me && dataConsults.me.answered.length == 0 && <p>No tiene consultas contestadas.</p>}
+            {dataConsults.me && dataConsults.me.answered.length === 0 && <p>No tiene consultas contestadas.</p>}
         </div>
     );
 }

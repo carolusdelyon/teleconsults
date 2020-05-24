@@ -1,11 +1,6 @@
-// import './serviceworker';
-
-const notificationServer = 'http://18.217.185.213:5000/';
+const notificationServer = 'http://localhost:5000/';
 
 export function registertNotifications({ username }) {
-    // Register a Service Worker.
-    // navigator.serviceWorker.register('./serviceworker.js');
-
     navigator.serviceWorker.ready
         .then(function (registration) {
             // Use the PushManager to get the user's subscription to the push service.
@@ -43,31 +38,6 @@ export function registertNotifications({ username }) {
                 }),
             });
 
-            // document.querySelector('#send').onclick = () => {
-            // console.log('sending...');
-            // fetch(notificationServer + 'sendNotification', {
-            //     method: 'post',
-            //     headers: {
-            //         'Content-type': 'application/json'
-            //     },
-            //     body: JSON.stringify({
-            //         subscription: subscription,
-            //         username: 99
-            //     }),
-            // });
-            // };
-
-            // document.querySelector('#unsusbsribe').onclick = () => {
-            //     navigator.serviceWorker.ready.then(function (reg) {
-            //         reg.pushManager.getSubscription().then(function (subscription) {
-            //             subscription.unsubscribe().then(function (successful) {
-            //                 console.log(`success unsubscribing`);
-            //             }).catch(function (e) {
-            //                 console.log(`error unsubscribing: ${e}`);
-            //             })
-            //         })
-            //     });
-            // };
         });
 }
 

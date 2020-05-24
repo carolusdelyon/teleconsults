@@ -1,29 +1,20 @@
-import React from "react";
-import {
-    Switch,
-    Route,
-    Link,
-    useRouteMatch
-} from "react-router-dom";
-import gql from 'graphql-tag';
 import { useQuery } from '@apollo/react-hooks';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 /** @jsx jsx */
 import { jsx, css } from '@emotion/core';
-
-import Loading from '../components/loading';
-import Greeting from '../components/greeting';
-import Consult from './consult';
-import { CONSULT_DATA_FRAGMENT } from './consult';
-import { colors, fontSizes, listStyle } from '../styles';
-import ConsultsEspecialist from '../components/consultsSpecialist';
+import gql from 'graphql-tag';
+import { Link, Route, Switch, useRouteMatch } from "react-router-dom";
 import ConsultsCoordinator from '../components/consultsCoordinator';
+import ConsultsEspecialist from '../components/consultsSpecialist';
+import Greeting from '../components/greeting';
+import Loading from '../components/loading';
+import { colors, listStyle } from '../styles';
+import Consult from './consult';
+import { ME } from './profile';
+
 
 const limitWords = 100;
 
 const style = css`
-    text-align: center;
-
     h2>span{
         color: ${colors.warning};
     }
@@ -41,15 +32,6 @@ const style = css`
     }
 `;
 
-export const ME = gql`
-query me {
-  me {
-      name,
-      roles
-  }
-}
-`;
-
 export default function Consults() {
     let match = useRouteMatch();
 
@@ -65,15 +47,7 @@ export default function Consults() {
         return <p>Error getting user data in consults :(</p>;
     }
 
-    /** This is a dirty workaround to solve the not
-     * automatic update of the token in the local 
-     * storage. // remove
-     * 
-     * TODO: fix this as soon as possible
-     **/
-    if (!dataMe.me) window && window.location.reload();
-
-
+    
     return (
         <div css={style}>
             <Switch>

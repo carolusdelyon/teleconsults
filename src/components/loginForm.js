@@ -1,9 +1,9 @@
-import React from 'react';
-import { Formik, Form, Field, ErrorMessage } from 'formik';
 /** @jsx jsx */
-import { jsx, css } from '@emotion/core';
+import { css, jsx } from '@emotion/core';
+import { ErrorMessage, Field, Form, Formik } from 'formik';
+import LogoFront from '../assets/logo-amigos.png';
+import { colors, mediaqueries } from '../styles';
 
-import { colors, fontSizes } from '../styles';
 
 const style = css`
     height: 100%;
@@ -11,23 +11,28 @@ const style = css`
     flex-direction: column;
     justify-content: center;
     align-items: center;
-
+    
     form{
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        border: 1px solid ${colors.background};
-        border-radius: 5px;
         color: ${colors.textLight};
-        padding: 1em ;
+        padding: 3em ;
+
+        ${mediaqueries[0]} {
+            border: 1px solid ${colors.greyLight};
+            border-radius: 1em; 
+        }
+    }
+
+    img{
+        width: 100%;
+        height: auto;
     }
 
     h1{
         color: ${colors.primary};
-        text-align:center;
-        margin-bottom: 0.5em;
-        font-size: 2em;
     }
     
     h2{
@@ -41,7 +46,7 @@ const style = css`
         font-weight: 700;
     }
 
-    label>div{
+    div{
         color: ${colors.error};
         font-weight: 400;
     }
@@ -51,7 +56,7 @@ const style = css`
     }
 `;
 
-const LoginForm = (props) => (
+const LoginForm = ({ login, warningMessage }) => (
     <div css={style}>
         <Formik
             initialValues={{ username: '', password: '' }}
@@ -66,24 +71,21 @@ const LoginForm = (props) => (
                 return errors;
             }}
             onSubmit={(values, { setSubmitting }) => {
-                setSubmitting(false);
-                props.login({
+                login({
                     variables: {
                         username: values.username,
                         password: values.password
                     }
                 });
+                setSubmitting(false);
             }}
-         >
+        >
             {({ isSubmitting }) => (
                 <Form>
+                    <img src={LogoFront} />
                     <h1>Telemedicina Cayapas</h1>
                     <h2>Ingresar</h2>
-                    <div
-                        css={css`
-                            color:${colors.error};
-                        `}
-                    >{props.warningMessage}</div>
+                    <div className="warningText">{warningMessage}</div>
                     <label> Usuario
                         <ErrorMessage name="username" component="div" />
                         <Field type="text" name="username" />
