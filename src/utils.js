@@ -1,7 +1,7 @@
 // from where we send web pushes notifications
-const notificationServerUrl = 'http://localhost:6000/';
+const notificationServerUrl = 'http://18.217.185.213:6000/';
 // from where we download the attachments
-export const fileServerUrl = 'http://localhost:5000';
+export const fileServerUrl = 'http://18.217.185.213:5000';
 
 export const attachedFileSizeLimit = 5000000;
 

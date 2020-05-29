@@ -158,10 +158,10 @@ const Answer = ({ answer }) => {
                 onCompleted(returnFiles) {
                     console.log(returnFiles); // remove
                     if (returnFiles.updateAttachments.length > 0) {
-                        alert(`Su respuesta fue exitosamente ${answer.id ? 'actualizada' : 'guardada'}`);
+                        alert(`Su respuesta fue exitosamente ${(answer && answer.id) ? 'actualizada' : 'guardada'}`);
                         window.location.href = '/consults';
                     } else {
-                        alert(`Hubo un error al ${answer.id ? 'actualizar' : 'guardar'} su respuesta`);
+                        alert(`Hubo un error al ${(answer && answer.id) ? 'actualizar' : 'guardar'} su respuesta`);
                     }
                 }
             }

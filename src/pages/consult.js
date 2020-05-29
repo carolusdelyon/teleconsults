@@ -126,8 +126,8 @@ export default function Consult() {
         autosaveData = autosave[[consultId.toString()]];
     }
 
-    const illName = dataSubill.ill.name;
-    const subillName = dataSubill.ill.subIlls.filter(si => si.id === answer.subillId)[0].name;
+    const illName = dataSubill.ill ? dataSubill.ill.name : '';
+    const subillName = (dataSubill.ill && dataSubill.ill.subIlls) ? dataSubill.ill.subIlls.filter(si => si.id === answer.subillId)[0].name : '';
     
     return (
         <div>
@@ -197,7 +197,7 @@ export default function Consult() {
                                     <span>{consult.pacientCurrentIll}</span>
                                 </li>
                                 <li>
-                                    <span>Enferemedad</span>
+                                    <span>Enfermedad</span>
                                     <span>{consult.pacientIll}</span>
                                 </li>
                                 <li>
