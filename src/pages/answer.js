@@ -12,19 +12,16 @@
 import { useMutation, useQuery } from '@apollo/react-hooks';
 import { Formik } from 'formik';
 import gql from 'graphql-tag';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import AnswerForm from '../components/answerForm';
 import AutoSave from '../components/autosave';
 import { ME } from './profile';
-
-
-// setInfoForm('Se cargó un formulario guardado.');
-// setInfoForm('Este formulario se guarda automáticamente. Puede abandonarlo en cualqier momento y volver luego para continuar donde se quedó.');
+import Loading from '../components/loading';
 
 export const ANSWER = gql`
 mutation createAnswer($consultId: ID!, $answer: AnswerInput!){
-  answer(consultId:$consultId, answer: $answer){
+  answer(consultId: $consultId, answer: $answer){
     success,
     message,
     answer{
@@ -33,6 +30,7 @@ mutation createAnswer($consultId: ID!, $answer: AnswerInput!){
   }
 }
 `;
+
 export const UPDATE_ANSWER = gql`
 mutation updateAnswer($answer: AnswerInput!){
     updateAnswer(answer: $answer){
@@ -53,6 +51,28 @@ export const FILE_UPLOAD = gql`
   }
 `;
 
+export const ILLS = gql`
+  query ills{
+      ills{
+          id
+          name
+      }
+  }
+`;
+
+export const SUBILLS = gql`
+  query subills($id: ID!) {
+    ill(id: $id){
+        subIlls{
+            id
+            name
+        }
+    }
+  }
+`;
+
+// update the atachment field once the files has been succesfully uploaded
+// see above
 export const UPDATE_ATTACHMENTS = gql`
   mutation updateAttachment($type:uploadType!, $id:ID!, $filenames: [String]!, ) {
     updateAttachments(type:$type, id:$id, filenames: $filenames)
@@ -61,56 +81,62 @@ export const UPDATE_ATTACHMENTS = gql`
 
 const Answer = ({ answer }) => {
     let { consultId } = useParams();
+    // once uploaded the answer this state is filled
+    // from the mutation response, and used to identify the
+    // `updateAttachment` 
     const [answerId, setAnswerId] = useState(null);
 
-    // mutation to save answer
+    // updated when a file is selected to be uploaded
+    const [files, setFiles] = useState([]);
+
+    // state to control ill and subills datalists
+    const [selectedIllId, setSelectedIllId] = useState(null);
+    const [selectedSubIllId, setSelectedSubIllId] = useState(null);
+
+    // getting data from specialist
+    const {
+        data: dataSpecialist,
+        loading: loadingEsp,
+        error: errorEsp
+    } = useQuery(ME);
+
     const [saveAnswer, { loading: loadingAns, error: errorAns }] = useMutation(
         ANSWER,
         {
             onCompleted(returnData) {
                 console.log(returnData); //remove
 
-                // if there are attachments
-                if (files) {
+                // if there are attachments continue
+                // with files transaction
+                if (files.length > 0) {
                     setAnswerId(returnData.answer.answer.id);
                     // uploading files with the returned id
-                    upload({
+                    uploadFiles({
                         variables: {
                             files,
                             type: 'ANSWER',
                             id: returnData.answer.answer.id
                         }
                     });
-                }else{
-                    window.location.href = '/consults';
+                } else { // ending the transaction
+                    if (returnData.answer.success) {
+                        alert('Su respuesta fue exitosamente guardada');
+                        window.location.href = '/consults';
+                    } else {
+                        alert('Hubo un error al guardar su respuesta');
+                    }
                 }
             }
         }
     );
-    if (loadingAns) console.log('loading answer');
-    if (errorAns) console.log('error in answer');
 
-    // mutation to save answer
-    const [updateAnswer, { loading: loadingUpdate, error: errorUpdate }] = useMutation(
-        UPDATE_ANSWER,
-        {
-            onCompleted(returnData) {
-                console.log(returnData); // remove
-                window.location.href = '/consults';
-            }
-        }
-    );
-    if (loadingUpdate) console.log('loading update answer');
-    if (errorUpdate) console.log('error in update answer');
-
-    // files state
-    const [files, setFiles] = useState(null);
     // uploading files attachment mutation
-    const [upload, { loading: loadingUpload,
+    const [uploadFiles, { loading: loadingUpload,
         error: errorUpload }] = useMutation(
             FILE_UPLOAD,
             {
                 onCompleted(returnData) {
+                    console.log(returnData); // remove
                     // updating the filenames of the
                     // attachments succesfully uploaded
                     updateAttachment({
@@ -123,37 +149,106 @@ const Answer = ({ answer }) => {
                 }
             }
         );
-    if (loadingUpload) console.log('loading upload ');
-    if (errorUpload) console.log('error in upload' + JSON.stringify(errorUpload));
 
-    // update attachments mutation
+    // update attachments mutation, used once the files has been uploaded
     const [updateAttachment, { loading: loadingAttachment,
         error: errorAttachment }] = useMutation(
             UPDATE_ATTACHMENTS,
             {
-                onCompleted(returnData) {
-                    console.log(returnData);
-                    window.location.href = '/consults';
+                onCompleted(returnFiles) {
+                    console.log(returnFiles); // remove
+                    if (returnFiles.updateAttachments.length > 0) {
+                        alert(`Su respuesta fue exitosamente ${answer.id ? 'actualizada' : 'guardada'}`);
+                        window.location.href = '/consults';
+                    } else {
+                        alert(`Hubo un error al ${answer.id ? 'actualizar' : 'guardar'} su respuesta`);
+                    }
                 }
-
             }
         );
-    if (loadingAttachment) console.log('loading update filename');
-    if (errorAttachment) console.log('error in update filename' + JSON.stringify(errorAttachment));
 
-    // getting data from specialist
+    // mutations to yet created answers to be updated
+    const [updateAnswer, { loading: loadingUpdate, error: errorUpdate }] = useMutation(
+        UPDATE_ANSWER,
+        {
+            onCompleted(returnData) {
+                console.log(returnData); // remove
+                // ending the transaction
+                if (returnData.updateAnswer.success) {
+
+                    if (files.length > 0) {
+                        setAnswerId(answer.id);
+                        // uploading files
+                        uploadFiles({
+                            variables: {
+                                files,
+                                type: 'ANSWER',
+                                id: answer.id
+                            }
+                        });
+                    }else{
+                        alert('Su respuesta fue exitosamente actualizada');
+                        window.location.href = '/consults';
+                    }
+                } else {
+                    alert('Hubo un error al actualizar su respuesta');
+                }
+            }
+        }
+    );
+
+    // get all ills
     const {
-        data: dataEspecialist,
-        loading: loadingEsp,
-        error: errorEsp
-    } = useQuery(ME);
-    if (loadingEsp) console.log('loading specialist dataEspecialist');
-    if (errorEsp || !dataEspecialist) console.log('error getting the specialist dataEspecialist');
-    // console.log(dataEspecialist);
+        data: dataIll,
+        loading: loadingIll,
+        error: errorIll
+    } = useQuery(ILLS);
 
-    return (
+    // used once a main ill is selected
+    const {
+        data: dataSubill,
+        loading: loadingSubill,
+        error: errorSubill
+    } = useQuery(SUBILLS, {
+        variables: { id: selectedIllId }
+    });
+
+    // setting the corresponding ills names if it's an answer update
+    useEffect(() => {
+        if (answer && answer.id && answer.illId && dataIll.ills) {
+            if (answer.illId) setSelectedIllId(answer.illId);
+            const ill = dataIll.ills.filter(ill => ill.id === answer.illId)[0];
+            if (ill && ill.name) answer.illName = ill.name;
+        }
+    }, [dataIll]);
+    useEffect(() => {
+        if (answer && answer.id && answer.subillId && dataSubill && dataSubill.ill) {
+            if (answer.subillId) setSelectedSubIllId(answer.subillId);
+            const subill = dataSubill.ill.subIlls.filter(subill => subill.id === answer.subillId)[0];
+            if(subill && subill.name) answer.subillName = subill.name;
+        }
+    }, [dataSubill]);
+
+    if (loadingIll || !dataIll.ills) return <Loading />;
+    if (errorIll || !dataIll) return <p>Error obteniendo las enfermedades :(</p>;
+    if (loadingSubill) console.log('getting subills...');
+    if (errorSubill || !dataSubill) console.log('Error getting subills :(');
+
+    if (loadingEsp) return <Loading />;
+    if (errorEsp || !dataSpecialist) return <p>Error buscando los datos del especialista :(</p>;
+    if (loadingAns) return <Loading />;
+    if (errorAns) return <p>Error creando la respuesta :(</p>;
+    if (loadingUpload) return <Loading />;
+    if (errorUpload) return <p>Error subiendo los archivos adjuntos :(</p>;
+    if (loadingAttachment) return <Loading />;
+    if (errorAttachment) return <p>Error actualizando los archivos adjuntos :(</p>;
+    if (loadingUpdate) return <Loading />;
+    if (errorUpdate) return <p>Error actualizando la respuesta :(</p>;
+
+    // showing only if we have the names loaded in case of an update
+    // or if its a brand new form
+    if (!answer || (answer && !answer.id) || (answer && answer.id && answer.illName && answer.subillName)) return (
         <Formik
-            // TODO: improve this
             initialValues={{
                 commentary: answer ? answer.commentary : '',
                 proposalDiagnosticTests: answer ? answer.proposalDiagnosticTests : '',
@@ -161,28 +256,51 @@ const Answer = ({ answer }) => {
                 diagnosisDefinitive: answer ? answer.diagnosisDefinitive : '',
                 proposalEducation: answer ? answer.proposalEducation : '',
                 proposalTherapy: answer ? answer.proposalTherapy : '',
-                illId: answer ? answer.illId : '',
-                subillId: answer ? answer.subillId : '',
+                // TODO: fix tis loading the correct data when resuming the form
+                illName: (answer && answer.id) ? answer.illName : '',
+                subillName: (answer && answer.id) ? answer.subillName : '',
             }}
             validate={values => {
                 const errors = {};
-                if (!values) {
-                    errors.password = '';
+                if (!values.commentary) {
+                    errors.commentary = 'Comentario necesario';
+                }
+                if (!values.proposalDiagnosticTests) {
+                    errors.proposalDiagnosticTests = 'Diagnóstico necesario';
+                }
+                if (!values.diagnosisPresumtive) {
+                    errors.diagnosisPresumtive = 'Diagnóstico necesario';
+                }
+                if (!values.diagnosisDefinitive) {
+                    errors.diagnosisDefinitive = 'Diagnóstico necesario';
+                }
+                if (!values.proposalEducation) {
+                    errors.proposalEducation = 'Propuesta educativa necesaria';
+                }
+                if (!values.proposalTherapy) {
+                    errors.proposalTherapy = 'Propuesta terapéutica necesaria';
+                }
+                if (!values.illName) {
+                    errors.illId = 'Enfermedad necesaria';
+                }
+                if (!values.subillName) {
+                    errors.subillId = 'Subenfermedad necesaria';
                 }
                 return errors;
             }}
             onSubmit={(values, { setSubmitting }) => {
                 if (window.confirm('¿Está seguro de guardar esta respuesta?')) {
-                    values.city = dataEspecialist.me.city;
-                    values.province = dataEspecialist.me.province;
-                    values.speciality = dataEspecialist.me.speciality;
-                    values.hospital = dataEspecialist.me.hospital;
-                    values.specialistName = dataEspecialist.me.name;
+                    values.city = dataSpecialist.me.city;
+                    values.province = dataSpecialist.me.province;
+                    values.speciality = dataSpecialist.me.speciality;
+                    values.hospital = dataSpecialist.me.hospital;
+                    values.specialistName = dataSpecialist.me.name;
+                    values.illId = selectedIllId;
+                    values.subillId = selectedSubIllId;
+                    values.illName && delete values.illName;
+                    values.subillName && delete values.subillName;
 
-                    console.log('sending this values:');
-                    console.log(values);
-
-                    // selecting either creating or updating
+                    // either creating or updating the answer
                     if (!answer || (answer && !answer.id)) {
                         saveAnswer({ variables: { consultId, answer: values } });
                     } else {
@@ -194,11 +312,21 @@ const Answer = ({ answer }) => {
             }}
         >
             <>
-                <AnswerForm setFiles={setFiles} />
+                {/* TODO: improve thid multiple props */}
+                <AnswerForm
+                    files={files}
+                    setFiles={setFiles}
+                    dataIll={dataIll}
+                    selectedIllId={selectedIllId}
+                    dataSubill={dataSubill}
+                    setSelectedIllId={setSelectedIllId}
+                    setSelectedSubIllId={setSelectedSubIllId}
+                    loadingSubill={loadingSubill}
+                />
                 <AutoSave />
             </>
         </Formik >
-    );
+    ); else return <Loading />;
 }
 
 

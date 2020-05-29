@@ -1,65 +1,61 @@
 import { useQuery } from "@apollo/react-hooks";
 import gql from "graphql-tag";
-import React from "react";
-import { Bar, BarChart, XAxis, YAxis } from 'recharts';
+import React from 'react';
 import { CONSULT_DATA_FRAGMENT } from "../pages/consult";
-import { ConsultTile } from '../pages/consults';
-import { colors } from '../styles';
+import ConsultTile from './consultTile';
 import Loading from './loading';
+import BarChart from './barchart';
+import { colors } from "../styles";
 
 export const MY_CONSULTS = gql`
 query myConsults {
   me {
-      id,
-      name,
-      roles,
-    pendent: consults(state: PENDENT) {
-        ...ConsultData
+        id,
+        name,
+        roles,
+        pendent: consults(state: PENDENT) {
+            ...ConsultData
+        }
+        answered: consults(state: ANSWERED) {
+            ...ConsultData
+        }
     }
-    answered: consults(state: ANSWERED) {
-        ...ConsultData
-    }
-  }
 }
 ${CONSULT_DATA_FRAGMENT}
 `;
 
-export default function ConsultEspecialist() {
+export default function ConsultSpecialist() {
     const {
         data: dataConsults,
-        loading,
-        error
+        loading: loadingConsults,
+        error: errorConsults
     } = useQuery(MY_CONSULTS, { fetchPolicy: "network-only" });
-
-    if (loading) return <Loading />;
-    if (error || !dataConsults) console.log('Error getting consults in consultSpecialist.js :( ===> '+ error);
+    if (loadingConsults) return <Loading />;
+    if (errorConsults || !dataConsults) return <p>Error obeteniendo las consultas</p>;
 
     // setting chart bar data
-    let countPendent = dataConsults.me ? dataConsults.me.pendent.length : 0;
-    let countAnswered = dataConsults.me ? dataConsults.me.answered.length : 0;
-    const dataChart = [{ name: 'Pendientes', count: countPendent }, { name: 'Contestadas', count: countAnswered }];
+    const countPendent = dataConsults.me.pendent.length;
+    const countAnswered = dataConsults.me.answered.length;
+    const dataChart = [{ name: 'Pendientes', count: countPendent },
+    { name: 'Contestadas', count: countAnswered }];
 
     return (
         <div>
-            <BarChart width={document.body.clientWidth * 0.8} height={150} data={dataChart}>
-                <Bar fill={colors.quaternary} dataKey="count" label={{ position: 'inside' }} />
-                <XAxis dataKey="name" />
-                <YAxis allowDecimals={false} hide={true} domain={[0, 'dataMax']} />
-            </BarChart>
+            <BarChart data={dataChart} />
             <h2>Consultas Pendientes <span className="material-icons">new_releases</span></h2>
             <ul>
-                {dataConsults.me && dataConsults.me.pendent.map((consult, index) => (
-                    <ConsultTile consult={consult} key={index} />
+                {dataConsults.me.pendent.map((consult, index) => (
+                    <ConsultTile consult={consult} key={index} borderColor={colors.warning} />
                 ))}
             </ul>
-            {dataConsults.me && dataConsults.me.pendent.length === 0 && <p>No tiene consultas pendientes.</p>}
+            {!countPendent && <p>No tiene consultas pendientes.</p>}
             <h2>Consultas Contestadas</h2>
             <ul>
-                {dataConsults.me && dataConsults.me.answered.map((consult, index) => (
+                {dataConsults.me.answered.map((consult, index) => (
                     <ConsultTile consult={consult} key={index} />
                 ))}
             </ul>
-            {dataConsults.me && dataConsults.me.answered.length === 0 && <p>No tiene consultas contestadas.</p>}
+            {!countAnswered && <p>No tiene consultas contestadas.</p>}
         </div>
     );
 }

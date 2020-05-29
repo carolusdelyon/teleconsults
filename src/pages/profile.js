@@ -8,7 +8,7 @@ import { useState } from 'react';
 import Loading from '../components/loading';
 import { logout } from '../components/logout-button';
 import { listStyle } from '../styles';
-import { registertNotifications, unsusbsribe } from '../utils';
+import { registerNotifications, unsusbsribe } from '../utils';
 import {colors} from '../styles';
 
 const style = css`
@@ -211,7 +211,7 @@ export default function Profile() {
               <div>
                 <button onClick={
                   () => {
-                    registertNotifications({ username: dataMe.me.username });
+                    registerNotifications({ username: dataMe.me.username });
                     alert('Ha sido registrado para recibir notificaciones');
                   }
                 }>Recibir notificaciones</button>
@@ -252,7 +252,11 @@ const ProfileItem = ({ label, value, notify, name, type }) => {
       {isEditing &&
         <Field type={type} name={name} />}
       {isEditing &&
-        <ErrorMessage name={name} component="span" className="error" />}
+        <ErrorMessage css={css`
+            color: ${colors.error};
+            margin-left: 1em;
+        `}
+        name={name} component="span" />}
     </li>
   );
 }

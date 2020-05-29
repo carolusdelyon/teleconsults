@@ -18,7 +18,7 @@ const style = css`
         justify-content: center;
         align-items: center;
         color: ${colors.textLight};
-        padding: 3em ;
+        padding: 3em 1em ;
 
         ${mediaqueries[0]} {
             border: 1px solid ${colors.greyLight};
@@ -29,6 +29,9 @@ const style = css`
     img{
         width: 100%;
         height: auto;
+        ${mediaqueries[1]} {
+            width: 80%;
+        }
     }
 
     h1{

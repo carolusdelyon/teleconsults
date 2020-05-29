@@ -16,6 +16,7 @@ export const colors = {
   backgroundAltern: '#F2F2F2',
   grey: '#8C8C8C',
   greyLight: '#DADCE0',
+  greyVeryLight: '#FAFAFA',
   text: '#0D0D0D',
   textSecondary: '#262626',
   textLight: 'white',
@@ -31,40 +32,6 @@ export const fontSizes = {
   small: '0.8em',
   verySmall: '0.3em',
 };
-
-export const listStyle = css`    
-  ul{
-    max-width: 90%;
-    margin: 1em auto;
-    border: 1px solid ${colors.greyLight};
-    box-shadow: 0.5em 0.5em ${colors.greyLight};
-    border-radius: 1em;
-    overflow: hidden;
-    background: ${colors.white};
-    color: ${colors.text};
-    text-align: left;
-    ${mediaqueries[1]}{
-      max-width: 70%;
-    }
-  }
-
-  li{
-    padding: 0.7em 1em;
-  }
-  li:nth-child(even){
-    background: ${colors.backgroundAltern};
-  }
-  li>:nth-child(1){
-    color: ${colors.text};
-    padding-right: 1em;
-    font-weight: 700;
-  }
-
-  a{
-    text-decoration: none;
-  }
-`;
-
 
 export const global = css`
   html{
@@ -104,10 +71,6 @@ export const global = css`
     }
   }
 
-  h2{
-    margin: 0.5em 0;
-    margin-top: 1em;
-  }
   h3{
       padding: 0.5em;
       color: ${colors.quaternary};
@@ -119,8 +82,9 @@ export const global = css`
 
   button{
     font-family: inherit;
+    font-size: inherit;
     font-weight: 700;
-    font-size: 1em;
+    outline: none;
     background: ${colors.primary};
     color:${colors.white};
     border: none;
@@ -131,12 +95,26 @@ export const global = css`
 
   input{
     font-family: inherit;
-    background: ${colors.white};
+    font-size: inherit;
+    outline: none;
+    background: ${colors.greyVeryLight};
     color:${colors.text};
-    border: 1px solid ${colors.greyLight};
+    border: 1px solid ${colors.quaternary};
     border-radius: 8px;
     padding: 0.5em 1em;
     margin: 0.5em 0;
+  }
+  
+  textarea{
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+    background: ${colors.greyVeryLight};
+    border: 1px solid ${colors.quaternary};
+    border-radius: 8px;
+    padding: 1em;
+    box-sizing: border-box;
+    min-height: 8em;
   }
 
   ul{
@@ -158,10 +136,92 @@ export const global = css`
       color: ${colors.primary};
   }
 
-  .error{
-      color: ${colors.error};
+  .link{
+    text-decoration: underline;
   }
-  span.error{
-    padding-left: 1em;
+`;
+
+export const listStyle = css`
+  /* text-transform: lowercase; */
+
+  ul, ol{
+    max-width: 90%;
+    margin: 1em auto;
+    border: 1px solid ${colors.greyLight};
+    box-shadow: 0.5em 0.5em ${colors.greyLight};
+    border-radius: 1em;
+    overflow: hidden;
+    background: ${colors.white};
+    color: ${colors.text};
+    text-align: left;
+    ${mediaqueries[1]}{
+      max-width: 70%;
+    }
+  }
+
+  li{
+    padding: 0.7em 1em;
+  }
+  li:nth-child(even){
+    background: ${colors.backgroundAltern};
+  }
+  li>:nth-child(1):not(.material-icons){
+    color: ${colors.text};
+    padding-right: 1em;
+    font-weight: 700;
+  }
+
+  a{
+    text-decoration: none;
+  }
+`;
+
+export const formStyle = css`
+  margin: 0 0.5em;
+  ${mediaqueries[0]}{
+    margin: 0 3em;
+  }
+
+  ol {
+    list-style: none;
+    counter-reset: section-counter;
+    margin: 0;
+    padding: 0;
+  }
+  ol li {
+    counter-increment: section-counter;
+  }
+
+  h3::before {
+    content: counter(section-counter);
+    background: ${colors.primary};
+    color: ${colors.textLight};
+    border-radius: 8px;
+    width: 2em;
+    padding: 0.1em;
+    margin-right: 1em;
+    display: inline-block;
+    text-align: center;
+  }
+
+  h3{
+      border: 1px solid ${colors.primary};
+      border-radius: 8px;
+      color:  ${colors.primary};
+      margin-bottom: 0.2em;
+      padding: 0.8em 0;
+  }
+
+  label{
+      display: flex;
+      flex-direction: column;
+      color: ${colors.primary};
+      font-weight: 700;
+      margin: 0.8em 0;
+  }
+
+  li>div>div{
+      color: ${colors.error};
+      font-weight: 400;
   }
 `;

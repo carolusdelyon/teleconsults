@@ -9,7 +9,6 @@ import Loading from './loading';
 const style = css`
     color: ${colors.quaternary};
     padding: 1em;
-    text-transform: capitalize;
 `;
 
 const Greeting = ({ name }) => {

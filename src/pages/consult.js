@@ -2,16 +2,12 @@ import { useMutation, useQuery } from '@apollo/react-hooks';
 /** @jsx jsx */
 import { jsx, css } from '@emotion/core';
 import gql from 'graphql-tag';
-import { useState } from "react";
 import { Link, Route, Switch, useParams, useRouteMatch } from "react-router-dom";
 import Loading from '../components/loading';
 import { listStyle } from "../styles";
 import Answer from './answer';
-
-
-// from where we download the attachments
-const fileserverUrl = 'http://18.217.185.213:9000';
-
+import { getUrlDownloadFromFileServer, timestampToDate } from '../utils';
+import Assign from '../components/assignSpecialist';
 
 export const CONSULT_DATA_FRAGMENT = gql`
   fragment ConsultData on Consult {
@@ -25,6 +21,30 @@ export const CONSULT_DATA_FRAGMENT = gql`
     reason
     operatingUnit
     askerName
+    pacientDescription
+    pacientName
+    pacientAge
+    pacientSex
+    pacientCurrentIll
+    pacientPatologics
+    pacientWeight
+    pacientSize
+    pacientTemperature
+    pacientHead
+    pacientNeck
+    pacientHeart
+    pacientLungs
+    pacientPerine
+    pacientSkin
+    pacientSurgical
+    pacientLimb
+    pacientIll
+    pacientSubIll
+    pacientAbdomen
+    pacientAllergies
+    pacientQuestions
+    pacientComentaries
+    pacientExams
   }
 `;
 
@@ -55,22 +75,18 @@ query getConsult($id: ID!) {
 ${CONSULT_DATA_FRAGMENT}
 `;
 
-export const GET_SPECIALISTS = gql`
-query getSpecialists($speciality: String) {
-    specialists(speciality: $speciality) {
-        name
-        username
+// TODO: try to unify all queries
+const ILL = gql`
+  query subills($id: ID!) {
+    ill(id: $id){
         id
-  }
-}`
-
-export const SET_SPECIALIST = gql`
-mutation setSpecialist($specialistId: ID!, $consultId: ID!){
-    assignEspecialist(specialistId:$specialistId, consultId: $consultId){
-        success
-        message
+        name
+        subIlls{
+            id
+            name
+        }
     }
-}
+  }
 `;
 
 export default function Consult() {
@@ -78,28 +94,54 @@ export default function Consult() {
     const { consultId } = useParams();
 
     const {
-        data,
-        loading,
-        error
+        data: dataConsult,
+        loadin: loadinConsult,
+        error: errorConsult
     } = useQuery(CONSULT, {
         variables: { id: consultId }
     });
 
-    if (loading) return <Loading />;
-    if (error || !data) console.log('Error getting consults in consult.js :( ===> '+ error);
+    const consult = dataConsult.consult;
+    let answer = null;
+    if (consult && consult.dateAnswered) answer = consult.answer;
 
-    const consult = data.consult;
+    // getting ills to fetch the names
+    const {
+        data: dataSubill,
+        loading: loadingSubill,
+        error: errorSubill
+    } = useQuery(ILL, {
+        variables: { id: answer ? answer.illId : '' }
+    });
 
+    if (loadinConsult || !dataConsult.consult) return <Loading />;
+    if (errorConsult || !dataConsult) return <p>Error al obtener la consulta :(</p>;
+    if (loadingSubill) return <Loading />;
+    if (errorSubill || !dataSubill) return <p>Error al obtener los datos de las enfermedades :(</p>;
+
+    // retrieve consult autosave data to pass it to the module
+    let autosaveData = null;
+    if (localStorage.getItem('autosave')) {
+        const autosave = JSON.parse(localStorage.getItem('autosave'));
+        autosaveData = autosave[[consultId.toString()]];
+    }
+
+    const illName = dataSubill.ill.name;
+    const subillName = dataSubill.ill.subIlls.filter(si => si.id === answer.subillId)[0].name;
+    
     return (
         <div>
             <Switch>
+                {/* modifying/updating the answer of the consult */}
                 <Route path={`${match.path}/answer/:answerID`}>
-                    <Answer answer={consult.answer} />
+                    <Answer answer={answer} />
                 </Route>
+                {/* answering the consult */}
                 <Route path={`${match.path}/answer`}>
                     {/* loading corresponding data from local Storage */}
-                    <Answer answer={JSON.parse(localStorage.getItem('autosave'))[consultId.toString()]} />
+                    <Answer answer={autosaveData} />
                 </Route>
+                {/* detailed view of the consult and its answer if it's been answered*/}
                 <Route path={`${match.path}`}>
                     <div css={listStyle}>
                         {/* Consult section */}
@@ -107,28 +149,8 @@ export default function Consult() {
                             <h2>Datos</h2>
                             <ul>
                                 <li>
-                                    <span>ID</span>
-                                    <span>{consult.id}</span>
-                                </li>
-                                <li>
                                     <span>Fecha de Envío</span>
                                     <span>{consult.date}</span>
-                                </li>
-                                <li>
-                                    <span>Origen</span>
-                                    <span>{consult.city} / {consult.province}</span>
-                                </li>
-                                <li>
-                                    <span>Unidad Operativa</span>
-                                    <span>{consult.operatingUnit}</span>
-                                </li>
-                                <li>
-                                    <span>Especialidad del hospital</span>
-                                    <span>{consult.hospitalSpeciality}</span>
-                                </li>
-                                <li>
-                                    <span>Origen</span>
-                                    <span>{consult.city} / {consult.province}</span>
                                 </li>
                                 <li>
                                     <span>Enviada por</span>
@@ -138,10 +160,122 @@ export default function Consult() {
                                     <span>Motivo</span>
                                     <span>{consult.reason}</span>
                                 </li>
-                                {consult.specialistName &&<li>
+                                {consult.specialistName && <li>
                                     <span>Asignada a</span>
                                     <span>{consult.specialistName}</span>
                                 </li>}
+                                <li>
+                                    <span>Origen</span>
+                                    <span>{consult.city} / {consult.province}</span>
+                                </li>
+                                <li>
+                                    <span>Unidad Operativa</span>
+                                    <span>{consult.operatingUnit}</span>
+                                </li>
+                                <li>
+                                    <span>Especialidad del Hospital</span>
+                                    <span>{consult.hospitalSpeciality}</span>
+                                </li>
+                                <li>
+                                    <span>Descripción del Paciente</span>
+                                    <span>{consult.pacientDescription}</span>
+                                </li>
+                                <li>
+                                    <span>Nombre del Paciente</span>
+                                    <span>{consult.pacientName}</span>
+                                </li>
+                                <li>
+                                    <span>Edad del Paciente</span>
+                                    <span>{consult.pacientAge}</span>
+                                </li>
+                                <li>
+                                    <span>Sexo del Paciente</span>
+                                    <span>{consult.pacientSex}</span>
+                                </li>
+                                <li>
+                                    <span>Enfermedad Actual</span>
+                                    <span>{consult.pacientCurrentIll}</span>
+                                </li>
+                                <li>
+                                    <span>Enferemedad</span>
+                                    <span>{consult.pacientIll}</span>
+                                </li>
+                                <li>
+                                    <span>Subenfermedad</span>
+                                    <span>{consult.pacientSubIll}</span>
+                                </li>
+                                <li>
+                                    <span>Abdomen</span>
+                                    <span>{consult.pacientAbdomen}</span>
+                                </li>
+                                <li>
+                                    <span>Alergias</span>
+                                    <span>{consult.pacientAllergies}</span>
+                                </li>
+                                <li>
+                                    <span>Preguntas</span>
+                                    <span>{consult.pacientQuestions}</span>
+                                </li>
+                                <li>
+                                    <span>Comentarios</span>
+                                    <span>{consult.pacientComentaries}</span>
+                                </li>
+                                <li>
+                                    <span>Exámenes</span>
+                                    <span>{consult.pacientExams}</span>
+                                </li>
+                                <li>
+                                    <span>Patológicas</span>
+                                    <span>{consult.pacientPatologics}</span>
+                                </li>
+                                <li>
+                                    <span>Peso</span>
+                                    <span>{consult.pacientWeight}</span>
+                                </li>
+                                <li>
+                                    <span>Talla</span>
+                                    <span>{consult.pacientSize}</span>
+                                </li>
+                                <li>
+                                    <span>Temperatura</span>
+                                    <span>{consult.pacientTemperature}</span>
+                                </li>
+                                <li>
+                                    <span>Cabeza</span>
+                                    <span>{consult.pacientHead}</span>
+                                </li>
+                                <li>
+                                    <span>Cuello</span>
+                                    <span>{consult.pacientNeck}</span>
+                                </li>
+                                <li>
+                                    <span>Corazón</span>
+                                    <span>{consult.pacientHeart}</span>
+                                </li>
+                                <li>
+                                    <span>Pulmones</span>
+                                    <span>{consult.pacientLungs}</span>
+                                </li>
+                                <li>
+                                    <span>Periné</span>
+                                    <span>{consult.pacientPerine}</span>
+                                </li>
+                                <li>
+                                    <span>Piel</span>
+                                    <span>{consult.pacientSkin}</span>
+                                </li>
+                                <li>
+                                    <span>Quirúrgicas</span>
+                                    <span>{consult.pacientSurgical}</span>
+                                </li>
+                                <li>
+                                    <span>Extremidades</span>
+                                    <span>{consult.pacientLimb}</span>
+                                </li>
+                                <li>
+                                    <span>ID</span>
+                                    <span>{consult.id}</span>
+                                </li>
                             </ul>
                             {!consult.dateAnswered && consult.specialistName &&
                                 <Link to={`${match.url}/answer`}>
@@ -160,68 +294,76 @@ export default function Consult() {
                             <h2>Respuesta</h2>
                             <ul>
                                 <li>
-                                    <span>ID</span>
-                                    <span>{consult.answer.id}</span>
-                                </li>
-                                <li>
                                     <span>Fecha de respuesta</span>
-                                    <span>{consult.answer.date &&
-                                        new Date(Number(consult.answer.date)).toString()}</span>
-                                </li>
-                                <li>
-                                    <span>Origen</span>
-                                    <span>{consult.answer.city} / {consult.answer.province}</span>
-                                </li>
-                                <li>
-                                    <span>Hospital</span>
-                                    <span>{consult.answer.hospital}</span>
-                                </li>
-                                <li>
-                                    <span>Especialidad</span>
-                                    <span>{consult.answer.speciality}</span>
+                                    <span>{timestampToDate(answer.date)}</span>
                                 </li>
                                 <li>
                                     <span>Comentario</span>
-                                    <span>{consult.answer.commentary}</span>
+                                    <span>{answer.commentary}</span>
                                 </li>
                                 <li>
                                     <span>Enfermedad</span>
-                                    <span>{consult.answer.illId} / {consult.answer.subIllId}</span>
-                                </li>
-                                <li>
-                                    <span>Prueba de diag. propuesto</span>
-                                    <span>{consult.answer.proposalDiagnosticTests}</span>
-                                </li>
-                                <li>
-                                    <span>Plan educ. propuesto</span>
-                                    <span>{consult.answer.proposalEducation}</span>
-                                </li>
-                                <li>
-                                    <span>Terapia propuesta</span>
-                                    <span>{consult.answer.proposalTherapy}</span>
+                                    <span>{illName} ({answer.illId}) / {subillName} ({answer.subillId})</span>
                                 </li>
                                 <li>
                                     <span>Diagnóstico Presuntivo</span>
-                                    <span>{consult.answer.diagnosisPresumtive}</span>
+                                    <span>{answer.diagnosisPresumtive}</span>
                                 </li>
                                 <li>
                                     <span>Diagnóstico Definitivo</span>
-                                    <span>{consult.answer.diagnosisDefinitive}</span>
+                                    <span>{answer.diagnosisDefinitive}</span>
+                                </li>
+                                <li>
+                                    <span>Prueba de diag. propuesto</span>
+                                    <span>{answer.proposalDiagnosticTests}</span>
+                                </li>
+                                <li>
+                                    <span>Plan educ. propuesto</span>
+                                    <span>{answer.proposalEducation}</span>
+                                </li>
+                                <li>
+                                    <span>Terapia propuesta</span>
+                                    <span>{answer.proposalTherapy}</span>
+                                </li>
+                                <li>
+                                    <span>Origen</span>
+                                    <span>{answer.city} / {answer.province}</span>
+                                </li>
+                                <li>
+                                    <span>Hospital</span>
+                                    <span>{answer.hospital}</span>
+                                </li>
+                                <li>
+                                    <span>Especialidad</span>
+                                    <span>{answer.speciality}</span>
+                                </li>
+                                <li>
+                                    <span>ID</span>
+                                    <span>{answer.id}</span>
                                 </li>
                             </ul>
-                            {consult.answer.attachments && 
-                            <div>
-                            <h3>Adjuntos</h3>
-                            <ul>
-                                {consult.answer.attachments.split(',').map((filename, index) =>
-                                    <a key={index}
-                                        href={`${fileserverUrl}?id=${consult.answer.id}&type=answer&filename=${filename}`}>
-                                        <li>{filename}</li>
-                                    </a>
-                                )}
-                            </ul>
-                            </div>}
-                            <Link to={`${match.url}/answer/${consult.answer.id}`}>
+                            {answer.attachments &&
+                                <div>
+                                    <h3>Adjuntos</h3>
+                                    <i className="material-icons">attach_file</i>
+                                    <ul>
+                                        {answer.attachments.split(',').map((filename, index) =>
+                                            <li className="link" key={index}>
+                                                <a
+                                                    // TODO: to be raplaced by a service
+                                                    href={getUrlDownloadFromFileServer({
+                                                        type: 'answer',
+                                                        id: answer.id,
+                                                        filename
+                                                    })}>
+                                                    {filename}
+                                                </a>
+                                            </li>
+                                        )}
+                                    </ul>
+                                </div>
+                            }
+                            <Link to={`${match.url}/answer/${answer.id}`}>
                                 <button>Actualizar Respuesta</button>
                             </Link>
                         </div>
@@ -229,64 +371,6 @@ export default function Consult() {
                     </div>
                 </Route>
             </Switch>
-        </div>
-    );
-}
-
-function Assign({ speciality, consultId }) {
-    // state to control specialistId
-    const [specialistId, setSpecialistId] = useState(null);
-
-    // mutation to assign an specialist to a consult
-    const [setSpecialist, { loading: loadingSetSpecilist, error: errorSetSpecilist }] = useMutation(
-        SET_SPECIALIST,
-        {
-            onCompleted(returnData) {
-                console.log(returnData); //remove
-                alert(returnData.assignEspecialist.message);
-                window.location.href = '/consults';
-            }
-        }
-    );
-    if (loadingSetSpecilist) console.log('loading setting an specialist');
-    if (errorSetSpecilist) console.log('error in setting an specialist');
-
-    // searching specialists with corresponding speciality
-    const {
-        data: dataSpecialists,
-        loading: loadingSpecialists,
-        error: errorSpecialists
-    } = useQuery(GET_SPECIALISTS, {
-        variables: { speciality }
-    });
-
-    if (loadingSpecialists) console.log('loading specialists');
-    if (errorSpecialists || !dataSpecialists) console.log('error loading specialists '
-        + JSON.stringify(errorSpecialists));
-
-    function submitSetSpecialist() {
-        const dataSend = {
-            variables: {
-                specialistId,
-                consultId
-            }
-        };
-        setSpecialist(dataSend);
-    }
-
-    return (
-        <div css={css`
-            input, button{
-                margin: 0.5em;
-            }
-        `}>
-            <input list="specialists" name="specialistList" onInput={({ target }) => setSpecialistId(target.value)} />
-            <datalist id="specialists">
-                {dataSpecialists.specialists && dataSpecialists.specialists.map((specialist, index) => (
-                    <option key={index} value={specialist.id}>{specialist.name}</option>
-                ))}
-            </datalist>
-            <button onClick={submitSetSpecialist}>Asignar</button>
         </div>
     );
 }
